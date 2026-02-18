@@ -13,7 +13,7 @@ jobs:
 ##########
 # Tests
 ##########
-  tests:
+  test_and_lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,22 +34,38 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Docker Login
-        uses: docker/login-action@v3.7.0
+##########
+# Gitleaks
+##########
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Run gitleaks For Secrets Detection
+        uses: gitleaks/gitleaks-action@v2.3.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 ##########
 # Build and Push
 ##########
   build_and_push:
-    needs: tests
+    needs: [test_and_lint, gitleaks]
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
+
+      - name: Docker Login
+        uses: docker/login-action@v3.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Build
         run: |
