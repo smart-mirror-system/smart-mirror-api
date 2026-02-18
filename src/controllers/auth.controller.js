@@ -31,7 +31,7 @@ async function login(req, res) {
     { expiresIn: process.env.JWT_EXPIRES || "7d" }
   );
 
-  res.json({ ok: true, token });
+  res.json({ ok: true, token, userId: user._id });
 }
 
 module.exports = { register, login };
