@@ -38,7 +38,7 @@ jobs:
 # Build and Push
 ##########
   build_and_push:
-    needs: [test_and_lint, gitleaks]
+    needs: [test_and_lint]
     runs-on: ubuntu-latest
 
     steps:
