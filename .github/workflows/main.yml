@@ -47,5 +47,5 @@ jobs:
 
       - name: Docker Push
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:latest \
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:${{ github.sha }}
