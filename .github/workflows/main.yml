@@ -100,8 +100,19 @@ jobs:
         run: |
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:latest \
           ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:${{ github.sha }}
+          
+          # Tag the image with the semantic tag if it exists
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            docker tag ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:latest \
+            ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:${{ github.ref_name }}
+          fi
 
       - name: Docker Push
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:${{ github.sha }}
+          
+          # Push the tag if it exists (semantic release) 
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/smart-mirror-api:${{ github.ref_name }}
+          fi
