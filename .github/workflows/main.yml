@@ -140,7 +140,7 @@ jobs:
               # 3. Create a personalized message
               # NOTE: Everything between cat <<EOF and EOF must be flush left!
             cat <<EOF > message.txt
-            From: Pipeline Bot <mf2976527@gmail.com>
+            From: Pipeline Bot <mohamed.fouad.softwareengineer@gmail.com>
             To: $EMAIL
             Subject: GitHub Actions: Push to ${{ github.ref_name }}
 
