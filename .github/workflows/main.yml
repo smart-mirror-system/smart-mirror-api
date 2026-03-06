@@ -125,39 +125,40 @@ jobs:
   # Build and Push
   ##########
   notify_team:
-    needs: build_and_push
-    runs-on: ubuntu-latest
-    steps: 
-      - name: Send Pipeline Email to Team
-        run: |
-          # 1. Define your team emails (separated by spaces)
-          TEAM_EMAILS="mohamed.fouad.softwareengineer@gmail.com kareemhany.eng@gmail.com"
+      needs: build_and_push
+      runs-on: ubuntu-latest
+      steps: 
+        - name: Send Pipeline Email to Team
+          run: |
+            # 1. Define your team emails (separated by spaces)
+            TEAM_EMAILS="mohamed.fouad.softwareengineer@gmail.com kareemhany.eng@gmail.com"
 
-          # 2. Start the loop
-          for EMAIL in $TEAM_EMAILS; do
-            echo "Sending email to $EMAIL..."
-            
-            # 3. Create a personalized message for this specific loop iteration
+            # 2. Start the loop
+            for EMAIL in $TEAM_EMAILS; do
+              echo "Sending email to $EMAIL..."
+              
+              # 3. Create a personalized message
+              # NOTE: Everything between cat <<EOF and EOF must be flush left!
             cat <<EOF > message.txt
             From: Pipeline Bot <mf2976527@gmail.com>
             To: $EMAIL
             Subject: GitHub Actions: Push to ${{ github.ref_name }}
 
             ${{ github.actor }} has pushed to the ${{ github.ref_name }} branch.
-            
+
             The automation pipeline has finished running successfully!
-            
+
             Check the commit or workflow run in GitHub for more details.
             EOF
-            
-            # 4. Send the email via Brevo
-            curl --ssl-reqd \
-              --silent \
-              --show-error \
-              --url "smtps://smtp-relay.brevo.com:465" \
-              --user "${{ secrets.BREVO_SMTP_USER }}:${{ secrets.BREVO_SMTP_PASSWORD }}" \
-              --mail-from "mf2976527@gmail.com" \
-              --mail-rcpt "$EMAIL" \
-              --upload-file message.txt
               
-          done
+              # 4. Send the email via Brevo
+              curl --ssl-reqd \
+                --silent \
+                --show-error \
+                --url "smtps://smtp-relay.brevo.com:465" \
+                --user "${{ secrets.BREVO_SMTP_USER }}:${{ secrets.BREVO_SMTP_PASSWORD }}" \
+                --mail-from "mf2976527@gmail.com" \
+                --mail-rcpt "$EMAIL" \
+                --upload-file message.txt
+                
+            done
