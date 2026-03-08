@@ -1,0 +1,20 @@
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu_latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: setup node
+        uses: actions/setup-node@6.2.
+        with:
+          node-version: "24"
+
+      - name: setup dependencies
+        run: npm install
+
+      - name: test
+        run: npm test
