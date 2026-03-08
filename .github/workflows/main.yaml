@@ -19,11 +19,14 @@ jobs:
 
   codeql-security-analysis:
     uses: ./.github/workflows/codeql-security-analysis.yaml
+    secrets: inherit
 
   build_and_push:
     needs: [test, codeql-security-analysis]
     uses: ./.github/workflows/docker.yaml
+    secrets: inherit
 
   notify_team:
     needs: build_and_push
     uses: ./.github/workflows/notify.yaml
+    secrets: inherit
