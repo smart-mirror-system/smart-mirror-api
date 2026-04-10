@@ -17,6 +17,7 @@ jobs:
     uses: ./.github/workflows/codeql-security-analysis.yaml
     secrets: inherit
     permissions:
+      contents: read
       security-events: write
       packages: read
 
