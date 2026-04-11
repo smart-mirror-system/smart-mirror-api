@@ -1,8 +1,8 @@
-const Session = require("../models/Session");
-const { rangeToDates } = require("../utils/dateRange");
+const Session = require('../models/Session');
+const { rangeToDates } = require('../utils/dateRange');
 
 async function summary(req, res) {
-  const range = req.query.range || "7d";
+  const range = req.query.range || '7d';
   const { start, end } = rangeToDates(range);
 
   const sessions = await Session.find({
@@ -13,7 +13,7 @@ async function summary(req, res) {
   const totalSessions = sessions.length;
   const totalReps = sessions.reduce((a, s) => a + (s.reps || 0), 0);
 
-  const scored = sessions.filter((s) => typeof s.formScore === "number");
+  const scored = sessions.filter((s) => typeof s.formScore === 'number');
   const avgFormScore = scored.length
     ? Math.round(scored.reduce((a, s) => a + s.formScore, 0) / scored.length)
     : null;
@@ -21,7 +21,7 @@ async function summary(req, res) {
   // aggregate mistakes
   const mistakeMap = new Map();
   for (const s of sessions) {
-    for (const m of (s.mistakes || [])) {
+    for (const m of s.mistakes || []) {
       if (!m?.type) continue;
       mistakeMap.set(m.type, (mistakeMap.get(m.type) || 0) + (m.count || 0));
     }
@@ -42,7 +42,7 @@ async function summary(req, res) {
 }
 
 async function progress(req, res) {
-  const range = req.query.range || "30d";
+  const range = req.query.range || '30d';
   const exerciseType = req.query.exerciseType;
   const { start, end } = rangeToDates(range);
 
@@ -58,7 +58,7 @@ async function progress(req, res) {
     exerciseType: s.exerciseType,
   }));
 
-  res.json({ ok: true, range, exerciseType: exerciseType || "all", points });
+  res.json({ ok: true, range, exerciseType: exerciseType || 'all', points });
 }
 
 module.exports = { summary, progress };

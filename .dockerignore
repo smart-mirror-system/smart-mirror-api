@@ -3,12 +3,15 @@ __tests__/
 .github/
 .vscode/
 node_modules/
+doc/
 
 # Files
 .env
 .git
 .gitignore
 .dockerignore
-README.md
+*.md
 Dockerfile
 docker-compose.yaml
+eslint.config.mjs
+.prettierrc

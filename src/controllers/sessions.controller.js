@@ -1,10 +1,12 @@
-const Session = require("../models/Session");
+const Session = require('../models/Session');
 
 async function createSession(req, res) {
   const { exerciseType, reps, formScore, mistakes, ts } = req.body;
 
-  if (!exerciseType || typeof reps !== "number") {
-    return res.status(400).json({ ok: false, error: "exerciseType and reps (number) required" });
+  if (!exerciseType || typeof reps !== 'number') {
+    return res
+      .status(400)
+      .json({ ok: false, error: 'exerciseType and reps (number) required' });
   }
 
   const session = await Session.create({
@@ -20,7 +22,9 @@ async function createSession(req, res) {
 }
 
 async function latestSession(req, res) {
-  const latest = await Session.findOne({ userId: req.user.userId }).sort({ ts: -1 });
+  const latest = await Session.findOne({ userId: req.user.userId }).sort({
+    ts: -1,
+  });
   res.json({ ok: true, latest });
 }
 
@@ -41,8 +45,12 @@ async function listSessions(req, res) {
 }
 
 async function getSessionById(req, res) {
-  const s = await Session.findOne({ _id: req.params.id, userId: req.user.userId });
-  if (!s) return res.status(404).json({ ok: false, error: "session not found" });
+  const s = await Session.findOne({
+    _id: req.params.id,
+    userId: req.user.userId,
+  });
+  if (!s)
+    return res.status(404).json({ ok: false, error: 'session not found' });
   res.json({ ok: true, session: s });
 }
 

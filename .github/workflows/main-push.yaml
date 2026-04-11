@@ -1,0 +1,17 @@
+name: Notify Team
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  notify:
+    uses: ./.github/workflows/notify.yaml
+    secrets: inherit
+
+  codeql-security-analysis:
+    uses: ./.github/workflows/codeql-security-analysis.yaml
+    secrets: inherit
+    permissions:
+      contents: read
+      security-events: write

@@ -1,0 +1,25 @@
+on:
+  workflow_call:
+
+jobs:
+  test:
+    name: jest and eslint
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: setup node
+        uses: actions/setup-node@v6.3.0
+        with:
+          node-version: '24'
+
+      - name: setup dependencies
+        run: npm install
+
+      - name: lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: test
+        run: npm test

@@ -1,10 +1,10 @@
-const http = require("http");
-const jwt = require("jsonwebtoken");
-const { Server } = require("socket.io");
+const http = require('http');
+const jwt = require('jsonwebtoken');
+const { Server } = require('socket.io');
 
-const { loadEnv } = require("./src/config/env");
-const app = require("./src/app");
-const { connectDB } = require("./src/db");
+const { loadEnv } = require('./src/config/env');
+const app = require('./src/app');
+const { connectDB } = require('./src/db');
 
 loadEnv();
 
@@ -16,8 +16,8 @@ const server = http.createServer(app);
 // Attach Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: "*", // IMPORTANT: frontend domain
-    methods: ["GET", "POST"],
+    origin: '*', // IMPORTANT: frontend domain
+    methods: ['GET', 'POST'],
   },
 });
 
@@ -25,26 +25,26 @@ const io = new Server(server, {
 io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
-    if (!token) return next(new Error("Unauthorized: missing token"));
+    if (!token) return next(new Error('Unauthorized: missing token'));
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Try common fields: id / _id / userId
     const userId = decoded.id || decoded._id || decoded.userId;
-    if (!userId) return next(new Error("Unauthorized: bad token payload"));
+    if (!userId) return next(new Error('Unauthorized: bad token payload'));
 
     socket.user = { id: String(userId) };
     next();
   } catch (e) {
-    next(new Error("Unauthorized: invalid token"));
+    next(new Error('Unauthorized: invalid token'));
   }
 });
 
 // Events
-io.on("connection", (socket) => {
+io.on('connection', (socket) => {
   // Join room (each user has a room)
-  socket.on("room:join", ({ userId }) => {
-  console.log("room:join", { from: socket.user.id, userId });
+  socket.on('room:join', ({ userId }) => {
+    console.log('room:join', { from: socket.user.id, userId });
     const myUserId = socket.user?.id;
     if (!myUserId) return;
 
@@ -55,8 +55,8 @@ io.on("connection", (socket) => {
   });
 
   // AI sends live progress
-  socket.on("ai:progress", (payload) => {
-  console.log("ai:progress", payload);
+  socket.on('ai:progress', (payload) => {
+    console.log('ai:progress', payload);
     const myUserId = socket.user?.id;
     if (!myUserId) return;
 
@@ -64,7 +64,7 @@ io.on("connection", (socket) => {
     if (String(payload?.userId) !== String(myUserId)) return;
 
     // Broadcast to dashboard
-    io.to(myUserId).emit("workout:progress", payload);
+    io.to(myUserId).emit('workout:progress', payload);
   });
 });
 
@@ -76,6 +76,6 @@ connectDB()
     );
   })
   .catch((err) => {
-    console.error("DB connection failed:", err);
+    console.error('DB connection failed:', err);
     process.exit(1);
   });

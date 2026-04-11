@@ -1,18 +1,17 @@
-version: "3.9"
+version: '3.9'
 
 services:
   smart-mirror-mongo:
     image: mongo
     container_name: mongo
     ports:
-      - "27017:27017" # to prevent conflict with a local mongodb
+      - '27017:27017'
     networks:
       - smart-mirror-net
-
   smart-mirror-api:
     image: mohamedfouad71/smart-mirror-api
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env
     depends_on:
@@ -20,9 +19,9 @@ services:
     networks:
       - smart-mirror-net
   smart-mirror-dashboard:
-    image: mohamedfouad71/smart-mirror-dashboard:Latest
+    image: mohamedfouad71/smart-mirror-dashboard
     ports:
-      - "8081:80"
+      - '8081:80'
     networks:
       - smart-mirror-net
 

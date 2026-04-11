@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const mistakeSchema = new mongoose.Schema(
   {
@@ -10,7 +10,11 @@ const mistakeSchema = new mongoose.Schema(
 
 const sessionSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     exerciseType: { type: String, required: true }, // "squat", "pushup", ...
     reps: { type: Number, required: true },
     formScore: { type: Number, default: null }, // 0..100 optional
@@ -20,4 +24,4 @@ const sessionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Session", sessionSchema);
+module.exports = mongoose.model('Session', sessionSchema);
