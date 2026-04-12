@@ -12,12 +12,12 @@ const {
 const generateScheduleLimit = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  message: { 
-    ok: false, 
-    error: 'Too many requests from this IP, please try again later after 1 hour from the last request' 
+  message: {
+    ok: false,
+    error:
+      'Too many requests from this IP, please try again later after 1 hour from the last request',
   },
 });
-
 
 router.get('/', auth, me);
 router

@@ -172,9 +172,9 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ### 4. User Profile
 
-| Method | Endpoint   | Description                                         |
-| :----- | :--------- | :-------------------------------------------------- |
-| `GET`  | `/api/me`  | Retrieve the current authenticated user's profile.  |
+| Method | Endpoint  | Description                                        |
+| :----- | :-------- | :------------------------------------------------- |
+| `GET`  | `/api/me` | Retrieve the current authenticated user's profile. |
 
 **Example: User Profile Response**
 
@@ -199,12 +199,12 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ### 5. Training Schedule
 
-| Method   | Endpoint             | Description                                     |
-| :------- | :------------------- | :---------------------------------------------- |
-| `GET`    | `/api/me/schedule`   | Retrieve the user's current training schedule.  |
-| `POST`   | `/api/me/schedule`   | Generate a new training schedule for the user.  |
-| `PUT`    | `/api/me/schedule`   | Update/regenerate the user's training schedule. |
-| `DELETE` | `/api/me/schedule`   | Delete the user's training schedule.            |
+| Method   | Endpoint           | Description                                     |
+| :------- | :----------------- | :---------------------------------------------- |
+| `GET`    | `/api/me/schedule` | Retrieve the user's current training schedule.  |
+| `POST`   | `/api/me/schedule` | Generate a new training schedule for the user.  |
+| `PUT`    | `/api/me/schedule` | Update/regenerate the user's training schedule. |
+| `DELETE` | `/api/me/schedule` | Delete the user's training schedule.            |
 
 **Example: Schedule Response**
 
@@ -231,7 +231,6 @@ GEMINI_API_KEY=your_gemini_api_key
   }
 }
 ```
-
 
 ---
 
