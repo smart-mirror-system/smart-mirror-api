@@ -1,6 +1,7 @@
 const http = require('http');
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
+const { instrument } = require('@socket.io/admin-ui');
 const { GoogleGenAI } = require('@google/genai');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 
@@ -24,9 +25,18 @@ const server = http.createServer(app);
 // Attach Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: [
+      "https://admin.socket.io",
+      "http://127.0.0.1:5500",
+      "http://localhost:5500"
+    ],
     methods: ['GET', 'POST'],
+    credentials: true,
   },
+});
+
+instrument(io, {
+  auth: false,
 });
 
 // Socket Auth (JWT)
@@ -302,6 +312,27 @@ io.on('connection', (socket) => {
     socket.join(deviceRoom(deviceId));
     console.log('DEVICE connected', { socketId: socket.id, deviceId });
 
+    // 🚨 New Event: Handling the automatic Stop signal (✋ sign) from the mirror
+    socket.on('workout:cancel', (payload = {}) => {
+      const userId = payload?.userId ? String(payload.userId) : '';
+      if (!userId) return;
+
+      console.log('🚨 [AI Gesture] Workout Cancel triggered via X sign for user:', userId);
+
+      // 1. Send a "Stop" command to the frontend to close the exercise page and display the Summary
+      io.to(userId).emit('workout:stop', { userId });
+
+      // 2. Compile the Summary and send it to the frontend immediately, as if the user clicked Stop themselves
+      const summary = buildSummary(userId);
+      if (summary) {
+        io.to(userId).emit('workout:summary', summary);
+        console.log('workout:summary sent via gesture', summary);
+      }
+
+      // 3. Clear the session from memory
+      sessions.delete(userId);
+    });
+    
     // Mirror -> Backend: progress
     socket.on('ai:progress', (payload = {}) => {
       const userId = payload?.userId ? String(payload.userId) : '';
