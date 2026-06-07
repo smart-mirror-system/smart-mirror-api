@@ -27,7 +27,7 @@ exports.authLimiter = rateLimit({
   },
 });
 
-exports.aiGenerationLimiter = rateLimit({
+exports.aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
   message: {

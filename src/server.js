@@ -2,12 +2,20 @@ const http = require('http');
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const { instrument } = require('@socket.io/admin-ui');
+const { GoogleGenAI } = require('@google/genai');
+const { RateLimiterMemory } = require('rate-limiter-flexible');
 
 const { loadEnv } = require('./config/env');
 const app = require('./app');
 const { connectDB } = require('./db');
+const userRepo = require('./repositories/user.repository');
+const ChatMessage = require('./models/ChatMessage');
+const Chat = require('./models/Chat');
+const CHATBOT_SYSTEM_PROMPT = require('./constants/prompts');
 
 loadEnv();
+
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const PORT = process.env.PORT || 3000;
 
@@ -64,6 +72,11 @@ const deviceRoom = (deviceId) => `device:${deviceId}`;
 
 // Events
 const sessions = new Map(); // userId -> session aggregate
+
+const rateLimiter = new RateLimiterMemory({
+  points: 5, // Number of allowed requests
+  duration: 60, // Per second(s)
+});
 
 function getOrCreateSession(userId) {
   if (!sessions.has(userId)) {
@@ -180,6 +193,111 @@ io.on('connection', (socket) => {
     socket.on('disconnect', (reason) => {
       sessions.delete(userId);
       console.log('USER disconnected', { socketId: socket.id, userId, reason });
+    });
+
+    // ########################## Chatbot Event ###################################
+    socket.on('chat:message', async (payload = {}) => {
+      const GEMINI_MODEL = 'gemini-3-flash-preview';
+      try {
+        let fullResponse = '';
+        const message = payload?.message
+          ? String(payload.message).trim()
+          : null;
+
+        if (!message)
+          return socket.emit('chat:error', {
+            reason: "message can't be empty",
+          });
+        if (message.length > 2000)
+          return socket.emit('chat:error', { reason: 'message is too long' });
+
+        try {
+          await rateLimiter.consume(userId, 1);
+        } catch (rateLimitError) {
+          // If the promise rejects, they are out of points
+          const retrySecs = Math.round(rateLimitError.msBeforeNext / 1000) || 1;
+          return socket.emit('chat:error', {
+            reason: `Rate limit exceeded. Please wait ${retrySecs} seconds.`,
+          });
+        }
+
+        const chatId = payload?.chatId;
+        if (!chatId)
+          return socket.emit('chat:error', {
+            reason: 'chatId is missing',
+          });
+
+        const chatExists = await Chat.exists({ _id: chatId, userId: userId });
+        if (!chatExists) {
+          return socket.emit('chat:error', {
+            reason: 'chat missing or unauthorized',
+          });
+        }
+
+        const userMessageRecord = await ChatMessage.create({
+          chatId,
+          userId,
+          message: message,
+          role: 'User',
+        });
+
+        await Chat.updateOne(
+          { _id: chatId },
+          { $set: { updatedAt: Date.now() } }
+        );
+
+        const userdata = await userRepo.findById(
+          userId,
+          'profile trainingSchedule diet'
+        );
+
+        socket.emit('chat:typing', { isTyping: true });
+        const responseStream = await client.models.generateContentStream({
+          model: GEMINI_MODEL,
+          contents: [{ role: 'user', parts: [{ text: message }] }],
+          config: {
+            systemInstruction: {
+              parts: [
+                {
+                  text:
+                    CHATBOT_SYSTEM_PROMPT +
+                    `\nUser data: ${JSON.stringify(userdata)}` +
+                    `\nCurrent date and time: ${new Date().toLocaleString()}`,
+                },
+              ],
+            },
+          },
+        });
+
+        // sending data piece by piece, must be embedded in the frontend
+        for await (const chunk of responseStream) {
+          const chunkText = chunk.text;
+          if (!chunkText) continue;
+          fullResponse += chunkText;
+          socket.emit('chat:chunk', { text: chunkText });
+        }
+
+        const botMessageRecord = await ChatMessage.create({
+          chatId,
+          userId,
+          message: fullResponse,
+          role: 'Bot',
+        });
+
+        await Chat.updateOne(
+          { _id: chatId },
+          { $set: { updatedAt: Date.now() } }
+        );
+
+        socket.emit('chat:reply:done', { fullText: fullResponse });
+        socket.emit('chat:typing', { isTyping: false });
+      } catch (error) {
+        console.error('Gemini Error:', error);
+        socket.emit('chat:error', {
+          message: 'Internal server problem, try again later',
+        });
+        socket.emit('chat:typing', { isTyping: false });
+      }
     });
 
     return;
