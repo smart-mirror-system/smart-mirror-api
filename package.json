@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.48.0",
+    "@socket.io/admin-ui": "^0.5.1",
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
