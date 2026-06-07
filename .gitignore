@@ -4,6 +4,8 @@ node_modules/
 # Files
 .env
 .vscode/*
+to-do
+chatbot-test.html
 
 # exceptions
 !.vscode/extensions.json

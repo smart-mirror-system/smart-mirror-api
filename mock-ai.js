@@ -1,8 +1,8 @@
 const { io } = require('socket.io-client');
 
 const API_URL = 'http://localhost:3000';
-const JWT =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OThhMThlZGU2M2NhNGE3ZWM0YjcxYzkiLCJpYXQiOjE3NzEzMzY5MjIsImV4cCI6MTc3MTk0MTcyMn0.TK5cU2UHr8DWbUmjfi74t_Tb0YbmLhjXSkq_pqxmSjA'; // نفس التوكن اللي طلع من login
+const JWT = // Same token gnerated from user login
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OThhMThlZGU2M2NhNGE3ZWM0YjcxYzkiLCJpYXQiOjE3NzEzMzY5MjIsImV4cCI6MTc3MTk0MTcyMn0.TK5cU2UHr8DWbUmjfi74t_Tb0YbmLhjXSkq_pqxmSjA';
 const USER_ID = '698a18ede63ca4a7ec4b71c9';
 
 const socket = io(API_URL, { auth: { token: JWT }, transports: ['websocket'] });
@@ -20,7 +20,6 @@ socket.on('connect', () => {
       reps,
       formScore: 80 + (reps % 10),
       mistakes: reps % 3 === 0 ? [{ type: 'knees_in', count: 1 }] : [],
-      ts: Date.now(),
     });
   }, 1000);
 });

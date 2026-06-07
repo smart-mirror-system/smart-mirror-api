@@ -49,7 +49,7 @@ function initSocket(server) {
     // Event 2: ai:progress
     // The AI Service sends this every time reps increase [cite: 1718, 1787]
     socket.on('ai:progress', (payload) => {
-      // Payload structure: { userId, exerciseType, reps, formScore, mistakes, ts }
+      // Payload structure: { userId, exerciseType, reps, formScore, mistakes }
       console.log('Received progress:', payload);
 
       const { userId } = payload;

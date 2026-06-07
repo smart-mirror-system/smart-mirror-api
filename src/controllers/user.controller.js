@@ -1,37 +1,18 @@
-const User = require('../models/User');
+const asyncHandler = require('express-async-handler');
+const userService = require('../services/user.service');
 
-async function saveSetup(req, res) {
-  try {
-    const userId = req.user.userId;
-    const { language, training, preferences, profile } = req.body;
+const saveSetup = asyncHandler(async (req, res) => {
+  const userId = req.user.userId;
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          language,
-          training,
-          preferences,
-          profile,
-          isSetupComplete: true,
-        },
-      },
-      { new: true }
-    );
+  const user = await userService.saveUserSetup(userId, req.body);
 
-    res.json({ ok: true, user });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: 'server error' });
-  }
-}
+  res.json({ ok: true, user });
+});
 
-async function getMe(req, res) {
-  try {
-    const user = await User.findById(req.user.userId);
-    res.json({ ok: true, user });
-  } catch (err) {
-    res.status(500).json({ ok: false });
-  }
-}
+const getMe = asyncHandler(async (req, res) => {
+  const user = await userService.getCurrentUser(req.user.userId);
+
+  res.json({ ok: true, user });
+});
 
 module.exports = { saveSetup, getMe };

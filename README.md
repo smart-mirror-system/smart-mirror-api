@@ -295,6 +295,124 @@ GEMINI_API_KEY=your_gemini_api_key
   }
 ```
 
+### 7. Chatbot (AI Coach)
+
+#### REST Endpoints
+
+| Method   | Endpoint                        | Description                                                                                                      |
+| :------- | :------------------------------ | :--------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/me/chatbot/chats`         | List all chat sessions for the authenticated user. Supports pagination with `page` and `limit` query params.     |
+| `POST`   | `/api/me/chatbot/chats`         | Create a new chat session. Body: `{ "title": "string (optional)" }`                                              |
+| `GET`    | `/api/me/chatbot/chats/:chatId` | Retrieve a chat session and its messages. Supports pagination for messages with `page` and `limit` query params. |
+| `PUT`    | `/api/me/chatbot/chats/:chatId` | Rename a chat session. Body: `{ "title": "string (required)" }`                                                  |
+| `PATCH`  | `/api/me/chatbot/chats/:chatId` | Rename a chat session (alias). Body: `{ "title": "string (required)" }`                                          |
+| `DELETE` | `/api/me/chatbot/chats/:chatId` | Delete a chat session and all its messages.                                                                      |
+
+#### Pagination
+
+For `GET /api/me/chatbot/chats` and `GET /api/me/chatbot/chats/:chatId`, you can use:
+
+- `page` (integer, optional): Page number (default: 1)
+- `limit` (integer, optional): Items per page (default: 10 for chats, 5 for messages)
+
+Responses include a `pagination` object:
+
+```json
+{
+  "ok": true,
+  "chats": [ ... ],
+  "pagination": {
+    "total": 23,
+    "page": 1,
+    "pages": 3
+  }
+}
+```
+
+or for messages:
+
+```json
+{
+  "ok": true,
+  "pagination": {
+    "totalMessages": 12,
+    "page": 1,
+    "totalPages": 3
+  },
+  "chat": { ... },
+  "chatMessages": [ ... ]
+}
+```
+
+#### Error Responses
+
+- Invalid `chatId` format: `{ "ok": false, "error": "Invalid chat ID format" }`
+- Chat not found or unauthorized: `{ "ok": false, "error": "Chat not found or unauthorized" }`
+- Missing or invalid `title` on update: `{ "ok": false, "error": "A valid text title is required" }`
+
+#### Request Body Requirements
+
+- `POST /api/me/chatbot/chats`: Optional `title` (string)
+- `PUT`/`PATCH /api/me/chatbot/chats/:chatId`: Required `title` (non-empty string)
+
+**Example: Create Chat Response**
+
+```json
+{
+  "ok": true,
+  "chatId": "68a1b2c3...",
+  "title": "New Chat"
+}
+```
+
+**Example: Get Chat Response**
+
+```json
+{
+  "ok": true,
+  "chat": {
+    "_id": "68a1b2c3...",
+    "title": "My Workout Questions",
+    "createdAt": "2026-04-15T10:00:00.000Z",
+    "updatedAt": "2026-04-15T10:05:00.000Z"
+  },
+  "chatMessages": [
+    {
+      "_id": "68a1b2c4...",
+      "chatId": "68a1b2c3...",
+      "message": "How many sets should I do for hypertrophy?",
+      "role": "User",
+      "createdAt": "2026-04-15T10:01:00.000Z"
+    },
+    {
+      "_id": "68a1b2c5...",
+      "chatId": "68a1b2c3...",
+      "message": "For hypertrophy, aim for 3-4 sets of 8-12 reps...",
+      "role": "Bot",
+      "createdAt": "2026-04-15T10:01:05.000Z"
+    }
+  ]
+}
+```
+
+#### Socket.IO Events (Real-time Chat)
+
+Connect via Socket.IO with a JWT token in the `auth` handshake:
+
+```js
+const socket = io('http://localhost:3000', {
+  auth: { token: '<JWT_TOKEN>' },
+});
+```
+
+| Direction       | Event             | Payload                       | Description                                 |
+| :-------------- | :---------------- | :---------------------------- | :------------------------------------------ |
+| Client → Server | `chat:message`    | `{ chatId, message }`         | Send a message to the AI coach.             |
+| Server → Client | `chat:typing`     | `{ isTyping: true/false }`    | Indicates the AI is processing a response.  |
+| Server → Client | `chat:chunk`      | `{ text }`                    | A streamed chunk of the AI's response.      |
+| Server → Client | `chat:reply:done` | `{ fullText }`                | Emitted when the full response is complete. |
+| Server → Client | `chat:error`      | `{ reason }` or `{ message }` | Emitted on validation or server errors.     |
+
 ---
 
 ## ☁️ Deployment

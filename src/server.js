@@ -1,12 +1,21 @@
 const http = require('http');
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
+const { instrument } = require('@socket.io/admin-ui');
+const { GoogleGenAI } = require('@google/genai');
+const { RateLimiterMemory } = require('rate-limiter-flexible');
 
-const { loadEnv } = require('./src/config/env');
-const app = require('./src/app');
-const { connectDB } = require('./src/db');
+const { loadEnv } = require('./config/env');
+const app = require('./app');
+const { connectDB } = require('./db');
+const userRepo = require('./repositories/user.repository');
+const ChatMessage = require('./models/ChatMessage');
+const Chat = require('./models/Chat');
+const CHATBOT_SYSTEM_PROMPT = require('./constants/prompts');
 
 loadEnv();
+
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const PORT = process.env.PORT || 3000;
 
@@ -16,9 +25,18 @@ const server = http.createServer(app);
 // Attach Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: [
+      "https://admin.socket.io",
+      "http://127.0.0.1:5500",
+      "http://localhost:5500"
+    ],
     methods: ['GET', 'POST'],
+    credentials: true,
   },
+});
+
+instrument(io, {
+  auth: false,
 });
 
 // Socket Auth (JWT)
@@ -54,6 +72,11 @@ const deviceRoom = (deviceId) => `device:${deviceId}`;
 
 // Events
 const sessions = new Map(); // userId -> session aggregate
+
+const rateLimiter = new RateLimiterMemory({
+  points: 5, // Number of allowed requests
+  duration: 60, // Per second(s)
+});
 
 function getOrCreateSession(userId) {
   if (!sessions.has(userId)) {
@@ -172,6 +195,111 @@ io.on('connection', (socket) => {
       console.log('USER disconnected', { socketId: socket.id, userId, reason });
     });
 
+    // ########################## Chatbot Event ###################################
+    socket.on('chat:message', async (payload = {}) => {
+      const GEMINI_MODEL = 'gemini-3-flash-preview';
+      try {
+        let fullResponse = '';
+        const message = payload?.message
+          ? String(payload.message).trim()
+          : null;
+
+        if (!message)
+          return socket.emit('chat:error', {
+            reason: "message can't be empty",
+          });
+        if (message.length > 2000)
+          return socket.emit('chat:error', { reason: 'message is too long' });
+
+        try {
+          await rateLimiter.consume(userId, 1);
+        } catch (rateLimitError) {
+          // If the promise rejects, they are out of points
+          const retrySecs = Math.round(rateLimitError.msBeforeNext / 1000) || 1;
+          return socket.emit('chat:error', {
+            reason: `Rate limit exceeded. Please wait ${retrySecs} seconds.`,
+          });
+        }
+
+        const chatId = payload?.chatId;
+        if (!chatId)
+          return socket.emit('chat:error', {
+            reason: 'chatId is missing',
+          });
+
+        const chatExists = await Chat.exists({ _id: chatId, userId: userId });
+        if (!chatExists) {
+          return socket.emit('chat:error', {
+            reason: 'chat missing or unauthorized',
+          });
+        }
+
+        const userMessageRecord = await ChatMessage.create({
+          chatId,
+          userId,
+          message: message,
+          role: 'User',
+        });
+
+        await Chat.updateOne(
+          { _id: chatId },
+          { $set: { updatedAt: Date.now() } }
+        );
+
+        const userdata = await userRepo.findById(
+          userId,
+          'profile trainingSchedule diet'
+        );
+
+        socket.emit('chat:typing', { isTyping: true });
+        const responseStream = await client.models.generateContentStream({
+          model: GEMINI_MODEL,
+          contents: [{ role: 'user', parts: [{ text: message }] }],
+          config: {
+            systemInstruction: {
+              parts: [
+                {
+                  text:
+                    CHATBOT_SYSTEM_PROMPT +
+                    `\nUser data: ${JSON.stringify(userdata)}` +
+                    `\nCurrent date and time: ${new Date().toLocaleString()}`,
+                },
+              ],
+            },
+          },
+        });
+
+        // sending data piece by piece, must be embedded in the frontend
+        for await (const chunk of responseStream) {
+          const chunkText = chunk.text;
+          if (!chunkText) continue;
+          fullResponse += chunkText;
+          socket.emit('chat:chunk', { text: chunkText });
+        }
+
+        const botMessageRecord = await ChatMessage.create({
+          chatId,
+          userId,
+          message: fullResponse,
+          role: 'Bot',
+        });
+
+        await Chat.updateOne(
+          { _id: chatId },
+          { $set: { updatedAt: Date.now() } }
+        );
+
+        socket.emit('chat:reply:done', { fullText: fullResponse });
+        socket.emit('chat:typing', { isTyping: false });
+      } catch (error) {
+        console.error('Gemini Error:', error);
+        socket.emit('chat:error', {
+          message: 'Internal server problem, try again later',
+        });
+        socket.emit('chat:typing', { isTyping: false });
+      }
+    });
+
     return;
   }
 
@@ -184,6 +312,27 @@ io.on('connection', (socket) => {
     socket.join(deviceRoom(deviceId));
     console.log('DEVICE connected', { socketId: socket.id, deviceId });
 
+    // 🚨 New Event: Handling the automatic Stop signal (✋ sign) from the mirror
+    socket.on('workout:cancel', (payload = {}) => {
+      const userId = payload?.userId ? String(payload.userId) : '';
+      if (!userId) return;
+
+      console.log('🚨 [AI Gesture] Workout Cancel triggered via X sign for user:', userId);
+
+      // 1. Send a "Stop" command to the frontend to close the exercise page and display the Summary
+      io.to(userId).emit('workout:stop', { userId });
+
+      // 2. Compile the Summary and send it to the frontend immediately, as if the user clicked Stop themselves
+      const summary = buildSummary(userId);
+      if (summary) {
+        io.to(userId).emit('workout:summary', summary);
+        console.log('workout:summary sent via gesture', summary);
+      }
+
+      // 3. Clear the session from memory
+      sessions.delete(userId);
+    });
+    
     // Mirror -> Backend: progress
     socket.on('ai:progress', (payload = {}) => {
       const userId = payload?.userId ? String(payload.userId) : '';

@@ -6,11 +6,11 @@ const authRoutes = require('./routes/auth.routes');
 const meRoutes = require('./routes/me.routes');
 const sessionsRoutes = require('./routes/sessions.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
-const { globalLimiter } = require('./middleware/rateLimit');
+const { globalLimiter } = require('./middleware/rateLimit.middleware');
 const userRoutes = require('./routes/user.routes');
 const faceRoutes = require('./routes/face.routes');
 
-const { notFound, errorHandler } = require('./middleware/error');
+const { notFound, errorHandler } = require('./middleware/error.middleware');
 const { loadEnv } = require('./config/env');
 
 loadEnv();
@@ -21,10 +21,7 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(globalLimiter);
 app.use(express.json());
-/**
- * Health and readiness routes.
- * Exposed for Kubernetes probes and monitoring.
- */
+
 app.use('/', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);

@@ -1,37 +1,32 @@
-const axios = require('axios');
+const asyncHandler = require('express-async-handler');
+const faceService = require('../services/face.service');
 
-const AI_URL = 'http://localhost:8000';
+exports.registerFace = asyncHandler(async (req, res) => {
+  const result = await faceService.registerFace(
+    req.body.user_id,
+    req.body.name
+  );
 
-exports.registerFace = async (req, res) => {
-  const { user_id, name } = req.body;
-
-  const response = await axios.post(`${AI_URL}/face/register`, null, {
-    params: { user_id, name },
+  res.json({
+    ok: true,
+    ...result,
   });
+});
 
-  res.json(response.data);
-};
+exports.trainFace = asyncHandler(async (req, res) => {
+  const result = await faceService.trainFace();
 
-exports.trainFace = async (req, res) => {
-  const response = await axios.post(`${AI_URL}/face/train`);
-
-  res.json(response.data);
-};
-
-exports.faceLogin = async (req, res) => {
-  const response = await axios.get(`${AI_URL}/face/recognize`);
-
-  const userId = response.data.user_id;
-
-  if (!userId) {
-    return res.status(401).json({
-      message: 'Face not recognized',
-    });
-  }
-
-  return res.json({
-    user_id: userId,
-    name: response.data.name,
-    confidence: response.data.confidence,
+  res.json({
+    ok: true,
+    ...result,
   });
-};
+});
+
+exports.faceLogin = asyncHandler(async (req, res) => {
+  const result = await faceService.faceLogin();
+
+  res.json({
+    ok: true,
+    ...result,
+  });
+});

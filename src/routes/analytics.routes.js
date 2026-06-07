@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const auth = require('../middleware/auth');
+const auth = require('../middleware/auth.middleware');
 const { summary, progress } = require('../controllers/analytics.controller');
 
 router.get('/summary', auth, summary);

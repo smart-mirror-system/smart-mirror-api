@@ -16,8 +16,14 @@ const userSchema = new mongoose.Schema(
       heightCm: Number,
       weightKg: Number,
       goal: String,
-      informations: String,
+      information: String,
     },
+    chats: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Chat',
+      },
+    ],
     trainingSchedule: {
       summary_message: String,
       schedule: [
