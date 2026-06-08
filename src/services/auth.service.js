@@ -16,6 +16,25 @@ const registerUser = async ({ email, password, profile }) => {
     throw err;
   }
 
+  if (password.length < 8 || password.length > 64) {
+    const err = new Error('Password must be between 8 and 64 characters long.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSpecial = /[@$!%*?&]/.test(password);
+
+  if (!hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+    const err = new Error(
+      'Password must contain uppercase, lowercase, number, and special character.'
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
 
   const user = await authRepo.createUser({
