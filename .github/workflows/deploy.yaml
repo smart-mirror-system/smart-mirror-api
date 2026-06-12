@@ -50,7 +50,7 @@ jobs:
             fi
             echo ${{ secrets.PRODUCTION_ENV }} > /app/.env
             docker compose -f /app/docker-compose.yaml up -d --remove-orphans
-            rm /app/.env
+            rm ./app/.env
 
       # 5. Remove the Ingress Rule (Even if the deployment fails)
       - name: Revoke Runner IP Whitelist
