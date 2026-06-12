@@ -47,9 +47,11 @@ jobs:
               cd /home/ubuntu/app
               git pull
             fi
-            echo ${{ secrets.PRODUCTION_ENV }} > /home/ubuntu/app/.env
-            sudo docker compose -f /home/ubuntu/app/docker-compose.yaml up -d --remove-orphans
-            rm /home/ubuntu/app/.env
+            cat << 'EOF' > .env
+            ${{ secrets.PRODUCTION_ENV }}
+            EOF            
+            sudo docker compose -f /home/ubuntu/app/docker-compose.yaml up -d
+            (sleep 300 && rm -f /home/ubuntu/app/.env) > /dev/null 2>&1 & # Remove the .env file after 5 minutes as a security measure
 
       # 5. Remove the Ingress Rule (Even if the deployment fails)
       - name: Revoke Runner IP Whitelist
