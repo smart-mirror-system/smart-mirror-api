@@ -54,9 +54,4 @@ jobs:
       # 5. Remove the Ingress Rule (Even if the deployment fails)
       - name: Revoke Runner IP Whitelist
         if: always() # Ensures this runs even if previous steps fail
-        run: |
-          aws ec2 revoke-security-group-ingress \
-            --group-id ${{ secrets.AWS_SG_ID }} \
-            --protocol tcp \
-            --port 22 \ 
-            --cidr ${{ steps.runner_ip.outputs.ip }}/32 > /dev/null || true # Ignore errors if the rule was already removed
+        run: aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.runner_ip.outputs.ip }}/32 > /dev/null || true
