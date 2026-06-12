@@ -41,17 +41,21 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+
             if [ ! -d "/home/ubuntu/app" ]; then
-              git clone ${{ secrets.PRODUCTION_DOCKER_COMPOSE_REPO }} /home/ubuntu/app
+              git clone *** /home/ubuntu/app
             else
               cd /home/ubuntu/app
               git pull
             fi
+
             cat << 'EOF' > .env
             ${{ secrets.PRODUCTION_ENV }}
-            EOF            
+            EOF
+
             sudo docker compose -f /home/ubuntu/app/docker-compose.yaml up -d
-            (sleep 300 && rm -f /home/ubuntu/app/.env) > /dev/null 2>&1 & # Remove the .env file after 5 minutes as a security measure
+            (sleep 300 && rm -f /home/ubuntu/app/.env) > /dev/null 2>&1 &
 
       # 5. Remove the Ingress Rule (Even if the deployment fails)
       - name: Revoke Runner IP Whitelist
