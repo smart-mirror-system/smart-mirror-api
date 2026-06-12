@@ -31,7 +31,7 @@ jobs:
             --group-id ${{ secrets.AWS_SG_ID }} \
             --protocol tcp \
             --port 22 \
-            --cidr ${{ steps.runner_ip.outputs.ip }}/32
+            --cidr ${{ steps.runner_ip.outputs.ip }}/32 > /dev/null || true # Ignore errors if the rule already exists
 
       # 4. Execute Deployment Commands via SSH
       - name: Execute Deployment Commands via SSH
@@ -48,7 +48,7 @@ jobs:
               git pull
             fi
             echo ${{ secrets.PRODUCTION_ENV }} > /home/ubuntu/app/.env
-            docker compose -f /home/ubuntu/app/docker-compose.yaml up -d --remove-orphans
+            sudo docker compose -f /home/ubuntu/app/docker-compose.yaml up -d --remove-orphans
             rm /home/ubuntu/app/.env
 
       # 5. Remove the Ingress Rule (Even if the deployment fails)
@@ -58,5 +58,5 @@ jobs:
           aws ec2 revoke-security-group-ingress \
             --group-id ${{ secrets.AWS_SG_ID }} \
             --protocol tcp \
-            --port 22 \
-            --cidr ${{ steps.runner_ip.outputs.ip }}/32
+            --port 22 \ 
+            --cidr ${{ steps.runner_ip.outputs.ip }}/32 > /dev/null || true # Ignore errors if the rule was already removed
