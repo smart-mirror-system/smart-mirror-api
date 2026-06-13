@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const helmet = require('helmet');
+const xss = require('xss-clean');
 const healthRoutes = require('./routes/health.routes');
 const authRoutes = require('./routes/auth.routes');
 const meRoutes = require('./routes/me.routes');
@@ -17,10 +19,13 @@ loadEnv();
 
 const app = express();
 
+app.set('trust proxy', 1); // Trust first proxy for rate limiting behind proxies/load balancers
+app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(globalLimiter);
 app.use(express.json());
+app.use(xss());
 
 app.use('/', healthRoutes);
 app.use('/api/auth', authRoutes);
