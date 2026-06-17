@@ -1,13 +1,9 @@
-name: CI
+name: Production Deployment
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
-    branches: [main, develop]
-
-permissions:
-  contents: read
+    tags:
+      - "**" # Triggers only on version tags, e.g., v1.0.0
 
 jobs:
   test:
@@ -15,7 +11,7 @@ jobs:
     uses: ./.github/workflows/test.yaml
 
   security:
-    name: Security Analysis
+    name: (CodeQL) Security Analysis
     uses: ./.github/workflows/codeql-security-analysis.yaml
     secrets: inherit
     permissions:
@@ -24,10 +20,22 @@ jobs:
       packages: read
 
   dependency-checks:
-    name: Dependency Checks
+    name: Dependency Checks (npm audit)
     uses: ./.github/workflows/dependency-checks.yaml
 
   docker:
     needs: [test, security, dependency-checks]
     uses: ./.github/workflows/docker.yaml
+    secrets: inherit
+
+  deploy:
+    name: Deploy to EC2
+    needs: docker
+    uses: ./.github/workflows/deploy.yaml
+    secrets: inherit
+
+  notify_prod:
+    name: Notify Production Deployment
+    needs: deploy
+    uses: ./.github/workflows/notify_prod.yaml
     secrets: inherit
