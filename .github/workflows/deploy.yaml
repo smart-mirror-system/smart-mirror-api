@@ -1,0 +1,63 @@
+name: Deploy to EC2
+
+on:
+  workflow_call:
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Configure AWS Credentials so the runner can talk to your Security Group
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # Match your Terraform region
+
+      # 2. Get the runner's public IP address
+      - name: Get Runner Public IP
+        id: runner_ip
+        run: |
+          RUNNER_IP=$(curl -s https://ifconfig.me)
+          echo "ip=$RUNNER_IP" >> $GITHUB_OUTPUT
+
+      # 3. Whitelist the Runner IP in the AWS Security Group for Port 22
+      - name: Whitelist Runner IP
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.runner_ip.outputs.ip }}/32 > /dev/null || true # Ignore errors if the rule already exists
+
+      # 4. Execute Deployment Commands via SSH
+      - name: Execute Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            if [ ! -d "/home/ubuntu/app" ]; then
+              git clone *** /home/ubuntu/app
+            else
+              cd /home/ubuntu/app
+              git pull
+            fi
+
+            cat << 'EOF' > .env
+            ${{ secrets.PRODUCTION_ENV }}
+            EOF
+
+            sudo docker compose -f /home/ubuntu/app/docker-compose.yaml up -d
+            (sleep 300 && rm -f /home/ubuntu/app/.env) > /dev/null 2>&1 &
+
+      # 5. Remove the Ingress Rule (Even if the deployment fails)
+      - name: Revoke Runner IP Whitelist
+        if: always() # Ensures this runs even if previous steps fail
+        run: aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.runner_ip.outputs.ip }}/32 > /dev/null || true

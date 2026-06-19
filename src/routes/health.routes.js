@@ -11,6 +11,10 @@ const router = express.Router();
  * - Confirms the server process is running and not crashed.
  * - If this fails, Kubernetes will restart the container.
  */
+router.get('/', (req, res) => {
+  res.status(200).json({ status: 'UP' });
+});
+
 router.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP' });
 });
