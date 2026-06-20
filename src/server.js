@@ -35,6 +35,9 @@ const io = new Server(server, {
   },
 });
 
+// Inject io into every Express request (so controllers can push socket events)
+app.use((req, _res, next) => { req.io = io; next(); });
+
 instrument(io, {
   auth: false,
 });
@@ -137,7 +140,23 @@ io.on('connection', (socket) => {
 
     // Auto-join user's room
     socket.join(userId);
+
+    // QR: mirror joins session room to receive instant auth event
+    socket.on('qr:join', (sessionId) => {
+      if (sessionId && typeof sessionId === 'string') {
+        socket.join(`qr:${sessionId}`);
+        console.log('Joined QR room:', `qr:${sessionId}`);
+      }
+    });
+
     console.log('USER connected', { socketId: socket.id, userId });
+
+    // Immediately send AI mapping data for skeleton keypoints to the frontend
+    socket.on('ai:mapping', (mapping) => {
+      console.log('Forwarding workout:progress to dashboard:', payload.userId);
+      // Send mapping to the dashboard (frontend)
+      io.emit('ai:mapping', mapping);
+    });
 
     // Frontend -> Backend
     socket.on('workout:start', (payload = {}) => {
@@ -310,6 +329,12 @@ io.on('connection', (socket) => {
     const deviceId = socket.device.id;
 
     socket.join(deviceRoom(deviceId));
+    // Same for device (QR page connects as device)
+    socket.on('qr:join', (sessionId) => {
+      if (sessionId && typeof sessionId === 'string') {
+        socket.join(`qr:${sessionId}`);
+      }
+    });
     console.log('DEVICE connected', { socketId: socket.id, deviceId });
 
     // 🚨 New Event: Handling the automatic Stop signal (✋ sign) from the mirror
@@ -359,6 +384,7 @@ io.on('connection', (socket) => {
 
       // Forward to user's room
       io.to(userId).emit('workout:progress', payload);
+      console.log('workout:progress', { userId, ...payload });
     });
 
     socket.on('disconnect', (reason) => {
