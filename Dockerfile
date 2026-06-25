@@ -21,6 +21,8 @@ COPY --from=dependencies --chown=nonroot:nonroot /app/node_modules /app/node_mod
 COPY --chown=nonroot:nonroot package.json ./
 COPY --chown=nonroot:nonroot src ./src
 
+RUN mkdir -p /home/nonroot && chown -R nonroot:nonroot /home/nonroot
+
 USER nonroot:nonroot
 
 EXPOSE 3000
