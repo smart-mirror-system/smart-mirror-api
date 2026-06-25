@@ -24,6 +24,7 @@ const server = http.createServer(app);
 
 // Attach Socket.IO
 const io = new Server(server, {
+  path: "/api/socket.io",
   cors: {
     origin: [
       "https://admin.socket.io",
