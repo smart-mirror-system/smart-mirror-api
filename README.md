@@ -413,6 +413,22 @@ const socket = io('http://localhost:3000', {
 | Server → Client | `chat:reply:done` | `{ fullText }`                | Emitted when the full response is complete. |
 | Server → Client | `chat:error`      | `{ reason }` or `{ message }` | Emitted on validation or server errors.     |
 
+### 8. AI Pause/Resume (Camera Control)
+
+HTTP endpoints to pause and resume the AI service's camera feed (used by face registration/login to release the camera).
+
+| Method | Endpoint          | Description                                                    |
+| :----- | :---------------- | :------------------------------------------------------------- |
+| `POST` | `/api/ai/pause`   | Emits `ai:pause` via Socket.IO — AI service releases camera.  |
+| `POST` | `/api/ai/resume`  | Emits `ai:resume` via Socket.IO — AI service re-acquires camera. |
+
+**Response:**
+```json
+{ "ok": true }
+```
+
+> **Note:** These routes are registered in `server.js` (not `app.js`) because they depend on `req.io`, which is injected after the Socket.IO server is created. See `src/routes/aisocket.routes.js`, `src/controllers/aisocket.controller.js`, and `src/services/aisocket.service.js`.
+
 ---
 
 ## ☁️ Deployment

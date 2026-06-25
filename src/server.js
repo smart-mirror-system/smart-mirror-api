@@ -8,6 +8,7 @@ const { RateLimiterMemory } = require('rate-limiter-flexible');
 const { loadEnv } = require('./config/env');
 const app = require('./app');
 const { connectDB } = require('./db');
+const { notFound, errorHandler } = require('./middleware/error.middleware');
 const userRepo = require('./repositories/user.repository');
 const ChatMessage = require('./models/ChatMessage');
 const Chat = require('./models/Chat');
@@ -38,6 +39,16 @@ const io = new Server(server, {
 
 // Inject io into every Express request (so controllers can push socket events)
 app.use((req, _res, next) => { req.io = io; next(); });
+
+// NOTE: aisocket routes are registered here (not in app.js) because they
+// need req.io (set above), which doesn't exist when app.js loads. This is
+// an intentional deviation from the MVC convention.
+const aisocketRoutes = require('./routes/aisocket.routes');
+app.use('/api/ai', aisocketRoutes);
+
+// Catch-all 404 + error handler — must come after ALL routes including aisocket
+app.use(notFound);
+app.use(errorHandler);
 
 instrument(io, {
   auth: false,

@@ -11,8 +11,6 @@ const analyticsRoutes = require('./routes/analytics.routes');
 const { globalLimiter } = require('./middleware/rateLimit.middleware');
 const userRoutes = require('./routes/user.routes');
 const faceRoutes = require('./routes/face.routes');
-
-const { notFound, errorHandler } = require('./middleware/error.middleware');
 const { loadEnv } = require('./config/env');
 
 loadEnv();
@@ -35,7 +33,9 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/face', faceRoutes);
 
-app.use(notFound);
-app.use(errorHandler);
+// NOTE: notFound / errorHandler middleware and aisocket routes (/api/ai)
+// are registered in server.js (not here) because they depend on `req.io`,
+// which is injected via middleware after the Socket.IO server is created.
+// See server.js lines ~41-48.
 
 module.exports = app;
